@@ -1,1 +1,53 @@
 
+https://code.earthengine.google.com/ba5ca87db994f4b2ef77cb9c9e240ae8
+
+// Assam Flood Mapping 2024 using shapefile
+// --------------------------------------
+
+// 1. Load uploaded Assam boundary from Assets
+var assam = ee.FeatureCollection("projects/ee-ayshaakteres/assets/Assam");
+var assam_geom = assam.geometry();
+
+// 2. Load pre-flood Sentinel-1 image
+var preFlood = ee.ImageCollection("COPERNICUS/S1_GRD")
+  .filterBounds(assam_geom)
+  .filterDate("2024-06-01", "2024-06-20")
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
+  .filter(ee.Filter.inList('orbitProperties_pass', ['ASCENDING', 'DESCENDING']))
+  .select('VV')
+  .median()
+  .clip(assam_geom);
+
+// 3. Load post-flood Sentinel-1 image
+var postFlood = ee.ImageCollection("COPERNICUS/S1_GRD")
+  .filterBounds(assam_geom)
+  .filterDate("2024-07-01", "2024-07-20")
+  .filter(ee.Filter.eq('instrumentMode', 'IW'))
+  .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
+  .filter(ee.Filter.inList('orbitProperties_pass', ['ASCENDING', 'DESCENDING']))
+  .select('VV')
+  .median()
+  .clip(assam_geom);
+
+// 4. Flood detection using threshold
+var diff = preFlood.subtract(postFlood);
+var flood = diff.gt(1.5).selfMask();  // You can adjust the threshold
+
+// 5. Visualization
+Map.centerObject(assam_geom, 7);
+Map.addLayer(preFlood, {min: -25, max: 0}, "Pre-Flood VV");
+Map.addLayer(postFlood, {min: -25, max: 0}, "Post-Flood VV");
+Map.addLayer(flood, {palette: ['blue']}, "Flood Map 2024");
+
+// 6. Export flood map to Google Drive
+Export.image.toDrive({
+  image: flood,
+  description: 'FloodMap_Assam_2024',
+  folder: 'GEE_Floods',
+  fileNamePrefix: 'assam_flood_2024',
+  region: assam_geom,
+  scale: 30,
+  maxPixels: 1e13
+});
+
