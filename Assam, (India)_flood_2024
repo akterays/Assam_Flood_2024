@@ -2,7 +2,7 @@
 https://code.earthengine.google.com/ba5ca87db994f4b2ef77cb9c9e240ae8
 
 // Assam Flood Mapping 2024 using shapefile
-// --------------------------------------
+// -------------
 
 // 1. Load uploaded Assam boundary from Assets
 var assam = ee.FeatureCollection("projects/ee-ayshaakteres/assets/Assam");
